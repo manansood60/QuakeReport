@@ -15,8 +15,12 @@
  */
 package com.example.android.quakereport;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 //import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -26,6 +30,10 @@ import java.util.ArrayList;
 
 public class EarthquakeActivity extends AppCompatActivity {
 
+    /** URL for earthquake data from the USGS dataset */
+    private static final String USGS_REQUEST_URL =
+            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude=5";
+
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
 
     @Override
@@ -34,14 +42,7 @@ public class EarthquakeActivity extends AppCompatActivity {
         setContentView(R.layout.earthquake_activity);
 
         // Create a fake list of earthquake locations.
-        ArrayList<Earthquake> earthquakes = new ArrayList<>();
-        earthquakes.add(new Earthquake("3.3", "San Francisco", "10-02-2023"));
-        earthquakes.add(new Earthquake("4", "London", "10-02-2023"));
-        earthquakes.add(new Earthquake("5", "Tokyo", "10-02-2023"));
-        earthquakes.add(new Earthquake("5.5", "Mexico City", "10-02-2023"));
-        earthquakes.add(new Earthquake("6", "Moscow", "10-02-2023"));
-        earthquakes.add(new Earthquake("6.2", "Rio de Janeiro", "10-02-2023"));
-        earthquakes.add(new Earthquake("6.5", "Paris", "10-02-2023"));
+        ArrayList<Earthquake> earthquakes = QueryUtils.extractEarthquakes(USGS_REQUEST_URL);
 
         // Find a reference to the {@link ListView} in the layout
         ListView earthquakeListView = (ListView) findViewById(R.id.list);
@@ -52,5 +53,18 @@ public class EarthquakeActivity extends AppCompatActivity {
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
         earthquakeListView.setAdapter(adapter);
+
+        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Earthquake earthquake = earthquakes.get(i);
+                String url = earthquake.getUrl();
+                Uri webpage = Uri.parse(url);
+                Intent intent = new Intent(Intent.ACTION_VIEW, webpage);
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(intent);
+                }
+            }
+        });
     }
 }
