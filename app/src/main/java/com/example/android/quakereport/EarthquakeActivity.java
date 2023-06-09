@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -107,6 +108,8 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
             mAdapter.addAll(earthquakes);
         }
         mEmptyStateTextView.setText(R.string.no_earthquakes);
+        ProgressBar pb = findViewById(R.id.loading_spinner);
+        pb.setVisibility(View.GONE);
     }
     @Override
     public void onLoaderReset(Loader<List<Earthquake>> loader) {
