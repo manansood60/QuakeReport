@@ -1,6 +1,8 @@
-package com.example.android.quakereport;
+ package com.example.android.quakereport;
 
 import android.util.Log;
+
+import com.example.android.quakereport.Earthquake;
 
 import org.json.JSONArray;
 import org.json.JSONException;

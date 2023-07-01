@@ -1,43 +1,76 @@
 package com.example.android.quakereport;
 
-import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
+import java.lang.reflect.Array;
+import java.security.AccessControlContext;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import static java.security.AccessController.getContext;
 
-public class EarthquakeAdapter extends ArrayAdapter<Earthquake> {
+public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
+    private ArrayList<Earthquake> earthquakes;
+    private EarthquakeItemClicked itemClickedListener;
 
-    public EarthquakeAdapter(Activity context, ArrayList<Earthquake> earthquakes){
-        super(context, 0, earthquakes);
+    public RecyclerAdapter(ArrayList<Earthquake> earthquakes, EarthquakeItemClicked listener){
+        this.earthquakes = earthquakes;
+        this.itemClickedListener = listener;
+    }
+    public void setNewDataSet(List<Earthquake> earthquakes){
+        this.earthquakes.clear();
+        this.earthquakes = (ArrayList)earthquakes;
     }
 
+    // It holds the view so the Views are not created everytime, so memory can be saved.
+    public static class MyViewHolder extends RecyclerView.ViewHolder{
+
+        public MyViewHolder(@NonNull View itemView) {
+            super(itemView);
+        }
+    }
+
+    // Return the size of the dataset (invoked by the layout manager)
+    @Override
+    public int getItemCount() {
+        Log.d("Size of ArrayList", ""+earthquakes.size());
+        return earthquakes.size();
+    }
+    // It Creates new views (invoked by the layout manager)
     @NonNull
     @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        // Check if the existing view is being reused, otherwise inflate the view
-        View listItemView = convertView;
-        if(listItemView == null){
-            listItemView = LayoutInflater.from(getContext()).inflate(
-                    R.layout.list_item, parent, false);
-        }
-        // Get the {@link Earthquake} object located at this position in the list
-        Earthquake currentEarthquake = getItem(position);
+    public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item, parent, false);
+        MyViewHolder viewHolder = new MyViewHolder(view);
+        return new MyViewHolder(view);
+    }
+
+    // It Replaces the contents of a view (invoked by the layout manager)
+    @Override
+    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+        // Get the {Earthquake} object located at this position in the list
+        Earthquake currentEarthquake = earthquakes.get(position);
+        // Get the list_item view object
+        View listItemView = holder.itemView;
 
         DecimalFormat formatter = new DecimalFormat("0.0");
         String mag = formatter.format(currentEarthquake.getMagnitude());
+
         TextView magnitudeView = listItemView.findViewById(R.id.magnitude);
         // Set the proper background color on the magnitude circle.
         // Fetch the background from the TextView, which is a GradientDrawable.
@@ -53,6 +86,7 @@ public class EarthquakeAdapter extends ArrayAdapter<Earthquake> {
         String location = currentEarthquake.getLocation();
         TextView locationOffset = listItemView.findViewById(R.id.location_offset);
         locationOffset.setText(getLocationOffset(location));
+
         TextView primaryLocation = listItemView.findViewById(R.id.location_primary);
         primaryLocation.setText(getPrimaryLocation(location));
 
@@ -67,8 +101,16 @@ public class EarthquakeAdapter extends ArrayAdapter<Earthquake> {
         String time = formatTime(dobj);
         timeView.setText(time);
 
-        return listItemView;
+        // setting up onclick listener
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                itemClickedListener.onItemClicked(holder.getAdapterPosition());
+            }
+        });
+
     }
+
 
     private int getMagnitudeColor(double magnitude) {
         int magnitudeColorResourceId;
@@ -106,7 +148,8 @@ public class EarthquakeAdapter extends ArrayAdapter<Earthquake> {
                 magnitudeColorResourceId = R.color.magnitude10plus;
                 break;
         }
-        return ContextCompat.getColor(getContext(), magnitudeColorResourceId);
+        int color = ContextCompat.getColor(App.context,magnitudeColorResourceId);
+        return color;
 
     }
 
@@ -140,4 +183,9 @@ public class EarthquakeAdapter extends ArrayAdapter<Earthquake> {
         else
             return place.substring(x+4,place.length());
     }
+
+}
+
+interface EarthquakeItemClicked{
+    public void onItemClicked(int position);
 }
