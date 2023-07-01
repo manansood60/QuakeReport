@@ -21,14 +21,20 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 //import android.support.v7.app.AppCompatActivity;
 
-public class EarthquakeActivity extends AppCompatActivity implements EarthquakeItemClicked, LoaderManager.LoaderCallbacks<List<Earthquake>> {
+public class EarthquakeActivity extends AppCompatActivity implements EarthquakeItemClicked {
 
     public static Context context ;
     /** URL for earthquake data from the USGS dataset */
-    private static final String USGS_REQUEST_URL =
-            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&minmag=6";
+    private static final String USGS_BASE_URL =
+            "https://earthquake.usgs.gov/fdsnws/event/1/";
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
 
@@ -41,7 +47,7 @@ public class EarthquakeActivity extends AppCompatActivity implements EarthquakeI
     /** Adapter for the list of earthquakes */
     private RecyclerAdapter mAdapter;
     private RecyclerView mRecyclerView;
-    private ArrayList<Earthquake> myList;
+    private List<Earthquake> earthquakes;
 
     private TextView mEmptyStateTextView=null;
 
@@ -49,6 +55,7 @@ public class EarthquakeActivity extends AppCompatActivity implements EarthquakeI
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
+        // Empty state TextView used when Recycler View will be empty
         mEmptyStateTextView = findViewById(R.id.empty_state_text_view);
 
         // Creating Recycler View object
@@ -56,9 +63,8 @@ public class EarthquakeActivity extends AppCompatActivity implements EarthquakeI
         // Setting Layout Manager for Recycler View
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Create a new adapter that takes an empty list of earthquakes as input
-        myList = new ArrayList<Earthquake>();
-        mAdapter = new RecyclerAdapter(myList,this);
+        // Create a new adapter
+        mAdapter = new RecyclerAdapter(this);
 
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
@@ -73,13 +79,39 @@ public class EarthquakeActivity extends AppCompatActivity implements EarthquakeI
         // If there is a network connection, fetch data
         if(networkInfo != null && networkInfo.isConnected()) {
             // Network Is Connected
-            // Get a reference to the LoaderManager, in order to interact with loaders.
-            LoaderManager loaderManager = getSupportLoaderManager();
+            // Making Network Request using Retrofit
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(USGS_BASE_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
 
-            // Initialize the loader. Pass in the int ID constant defined above and pass in null for
-            // the bundle. Pass in this activity for the LoaderCallbacks parameter (which is valid
-            // because this activity implements the LoaderCallbacks interface).
-            loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, this);
+            DataRequestInterface dataRequest = retrofit.create(DataRequestInterface.class);
+            dataRequest.getEarthquakeData().enqueue(new Callback<EarthquakeData>() {
+                @Override
+                public void onResponse(Call<EarthquakeData> call, Response<EarthquakeData> response) {
+                    earthquakes = QueryUtils.extractEarthquakes(response.body());
+                    if (earthquakes != null && !earthquakes.isEmpty()) {
+                        Log.e("GOT RESPONSE: ", earthquakes.get(1).getLocation());
+                        mAdapter.setNewDataSet(earthquakes);
+                        mAdapter.notifyDataSetChanged();
+                        mEmptyStateTextView.setVisibility(View.GONE);
+                    }else{
+                        mRecyclerView.setVisibility(View.GONE);
+//                      if(mEmptyStateTextView.getText() == null)
+                        mEmptyStateTextView.setText(R.string.no_earthquakes);
+                    }
+                    ProgressBar pb = findViewById(R.id.loading_spinner);
+                    pb.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onFailure(Call<EarthquakeData> call, Throwable t) {
+                    ProgressBar pb = findViewById(R.id.loading_spinner);
+                    pb.setVisibility(View.GONE);
+                    mRecyclerView.setVisibility(View.GONE);
+                    Log.e(LOG_TAG, t.getMessage() );
+                }
+            });
         }else{
             // Network is Not Connected
             // First, hide loading indicator so error message will be visible
@@ -91,41 +123,10 @@ public class EarthquakeActivity extends AppCompatActivity implements EarthquakeI
         }
 
     }
-    @Override
-    public Loader<List<Earthquake>> onCreateLoader(int i, Bundle bundle) {
-        // Create a new loader for the given URL
-        return new EarthquakeLoader(this, USGS_REQUEST_URL);
-    }
-    @Override
-    public void onLoadFinished(Loader<List<Earthquake>> loader, List<Earthquake> earthquakes) {
-        // If there is a valid list of {@link Earthquake}s, then add them to the adapter's
-        // data set. This will trigger the ListView to update.
-        if (earthquakes != null && !earthquakes.isEmpty()) {
-
-            myList.clear();
-            myList.addAll(earthquakes);
-            //mAdapter.setNewDataSet(earthquakes);
-            mAdapter.notifyDataSetChanged();
-            mEmptyStateTextView.setVisibility(View.GONE);
-        }else{
-            mRecyclerView.setVisibility(View.GONE);
-            if(mEmptyStateTextView.getText() == null)
-            mEmptyStateTextView.setText(R.string.no_earthquakes);
-        }
-        
-        ProgressBar pb = findViewById(R.id.loading_spinner);
-        pb.setVisibility(View.GONE);
-    }
-    @Override
-    public void onLoaderReset(Loader<List<Earthquake>> loader) {
-        // Loader reset, so we can clear out our existing data.
-
-    }
 
     @Override
     public void onItemClicked(int position) {
-        Log.e("Got The Position: ", position + " have size " + myList.size());
-        Earthquake earthquake = myList.get(position);
+        Earthquake earthquake = earthquakes.get(position);
         String url = earthquake.getUrl();
         Uri webpage = Uri.parse(url);
         Intent intent = new Intent(Intent.ACTION_VIEW, webpage);

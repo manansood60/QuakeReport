@@ -25,16 +25,15 @@ import java.util.List;
 import static java.security.AccessController.getContext;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
-    private ArrayList<Earthquake> earthquakes;
+    private List<Earthquake> earthquakes;
     private EarthquakeItemClicked itemClickedListener;
 
-    public RecyclerAdapter(ArrayList<Earthquake> earthquakes, EarthquakeItemClicked listener){
-        this.earthquakes = earthquakes;
+    public RecyclerAdapter(EarthquakeItemClicked listener){
+        earthquakes = null;
         this.itemClickedListener = listener;
     }
     public void setNewDataSet(List<Earthquake> earthquakes){
-        this.earthquakes.clear();
-        this.earthquakes = (ArrayList)earthquakes;
+        this.earthquakes = earthquakes;
     }
 
     // It holds the view so the Views are not created everytime, so memory can be saved.
@@ -48,15 +47,15 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
     // Return the size of the dataset (invoked by the layout manager)
     @Override
     public int getItemCount() {
-        Log.d("Size of ArrayList", ""+earthquakes.size());
-        return earthquakes.size();
+        if(earthquakes != null)
+            return earthquakes.size();
+        else return 0;
     }
     // It Creates new views (invoked by the layout manager)
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item, parent, false);
-        MyViewHolder viewHolder = new MyViewHolder(view);
         return new MyViewHolder(view);
     }
 
