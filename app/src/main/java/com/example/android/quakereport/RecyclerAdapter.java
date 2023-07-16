@@ -132,10 +132,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                 magnitudeColorResourceId = R.color.magnitude5;
                 break;
             case 6:
-                magnitudeColorResourceId = R.color.magnitude6;
+                magnitudeColorResourceId = R.color.magnitude5;
                 break;
             case 7:
-                magnitudeColorResourceId = R.color.magnitude7;
+                magnitudeColorResourceId = R.color.magnitude8;
                 break;
             case 8:
                 magnitudeColorResourceId = R.color.magnitude8;
@@ -169,20 +169,25 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
     }
 
     private String getLocationOffset(String place){
-        int x = place.indexOf(" of ");
-        if(x == -1)
-            return "Near the";
-        else
-            return place.substring(0,x+4);
+        if(place != null){
+            int x = place.indexOf(" of ");
+            if(x == -1)
+                return "Near the";
+            else
+                return place.substring(0,x+4);
+        }
+        return "";
     }
     private String getPrimaryLocation(String place){
-        int x = place.indexOf(" of ");
-        if(x == -1)
-            return place;
-        else
-            return place.substring(x+4,place.length());
+        if(place != null){
+            int x = place.indexOf(" of ");
+            if(x == -1)
+                return place;
+            else
+                return place.substring(x+4,place.length());
+        }
+        return "Unknown";
     }
-
 }
 
 interface EarthquakeItemClicked{
