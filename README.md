@@ -17,4 +17,4 @@ Pre-requisites
 Snapshots of the App
 -------
 
-![Alt text](<quake report.jpg> = 100*200)
+![Alt text](<quake report.jpg>)
